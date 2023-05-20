@@ -2,8 +2,10 @@ import random
 
 # Global variables
 POPULATION_SIZE = 100
-MAX_GENERATIONS = 100
-MUTATION_RATE = 0.2
+MAX_GENERATIONS = 90
+MUTATION_RATE = 0.12
+REPLACEMENT_RATE = 0.15
+REPLACEMENT_SIZE = int(POPULATION_SIZE * REPLACEMENT_RATE)
 
 with open("dict.txt", "r") as file:
     word_list = file.read().splitlines()
@@ -70,12 +72,8 @@ def calculate_fitness(decryption_key, ciphertext):
         if word == '':
             continue
         if word in decrypted_text_set:
-        # # Use regular expression to match whole words
-        # pattern = r"\b" + re.escape(word) + r"\b"
-        # if re.search(pattern, decrypted_text, re.IGNORECASE):
             words_matching += 1
 
-    #print(words_matching)
     # for each letter, add more fitness as it gets closer to the expected frequency
     for letter in letter_freq_map:
         if letter in letter_freq and letter in letter_freq_map:
@@ -90,27 +88,7 @@ def calculate_fitness(decryption_key, ciphertext):
             letters_matching += (1 - abs(letter_pair_freq[letter_pair] - letter_pair_freq_map[letter_pair]))
 
     # return the fitness
-    return words_matching+letters_matching
-# def calculate_fitness(decryption_key, ciphertext):
-#     decrypted_text = decrypt_text(ciphertext, decryption_key)
-#     decrypted_text_set = set(decrypted_text.split(" "))
-#     letter_freq = calculate_letter_frequency_from_text(decrypted_text)
-#     letter_pair_freq = calculate_letters_pairs_frequency_from_text(decrypted_text)
-#     words_matching = len(decrypted_text_set.intersection(word_list))
-#
-#     total_letters = sum(letter_freq.values())
-#     normalized_letter_freq = {letter: count / total_letters for letter, count in letter_freq.items()}
-#     letters_matching = 0
-#
-#     for letter in letter_freq_map:
-#         if letter in normalized_letter_freq and letter in letter_freq_map:
-#             letters_matching += (1 - abs(normalized_letter_freq[letter] - letter_freq_map[letter]))
-#
-#     for letter_pair in letter_pair_freq_map:
-#         if letter_pair in letter_pair_freq and letter_pair in letter_pair_freq_map:
-#             letters_matching += (1 - abs(letter_pair_freq[letter_pair] - letter_pair_freq_map[letter_pair]))
-#
-#     return words_matching + letters_matching
+    return 0.65 * words_matching + 0.35 * letters_matching
 
 def decrypt_text(ciphertext, decryption_key):
     decrypted_text = ""
@@ -131,32 +109,17 @@ def generate_random_key():
     return decryption_key
 
 def crossover(parent1, parent2):
-    print(parent1)
-    print(parent2)
     keys = list(parent1.keys())
     crossover_point = random.randint(0, len(keys)-1)
     child = {}
-    # for i in range(len(keys)):
-    #     if i <= crossover_point:
-    #         child[keys[i]] = parent1[keys[i]]
-    #     else:
-    #         child[keys[i]] = parent2[keys[i]]
-    #
-    #     #     while letter in child.values():
-    #     #         # If the letter is already present, find the next available letter
-    #     #         letter = parent2[keys[i]]
-    #     #
-    #     # child[keys[i]] = letter
-    #     print(child)
+    
     # Copy the letters from parent1 up to the crossover point
     for i in range(crossover_point + 1):
         child[keys[i]] = parent1[keys[i]]
-    print("here")
     # Fill the remaining letters from parent2, ensuring uniqueness
     for i in range(crossover_point + 1, len(keys)):
         letter = parent2[keys[i]]
 
-    # Check if the letter is already present in the child
         # Check if the letter is already present in the child
         while letter in child.values():
             # Find a letter that doesn't appear in the child
@@ -170,7 +133,6 @@ def crossover(parent1, parent2):
 
         child[keys[i]] = letter
 
-    #print(child)
     return child
 
 def mutate(decryption_key):
@@ -199,34 +161,26 @@ def replace_population(population, offspring, fitness_scores):
     # Find indices of individuals with worst fitness scores
     # Find indices of individuals with worst fitness scores
 
-
-    worst_indices = sorted(range(len(fitness_scores)), key=lambda i: fitness_scores[i])[:40]
+    worst_indices = sorted(range(len(fitness_scores)), key=lambda i: fitness_scores[i])[:3*REPLACEMENT_SIZE]
 
     # Find indices of individuals with best fitness scores from the existing population
-    best_population_indices = sorted(range(len(fitness_scores)), key=lambda i: fitness_scores[i], reverse=True)[:10]
+    best_population_indices = sorted(range(len(fitness_scores)), key=lambda i: fitness_scores[i], reverse=True)[:REPLACEMENT_SIZE]
+
 
     # Find indices of individuals with best fitness scores from the offspring
     best_offspring_indices = sorted(range(len(offspring)), key=lambda i: calculate_fitness(offspring[i], ciphertext),
-                                    reverse=True)[:10]
+                                    reverse=True)[:REPLACEMENT_SIZE]
 
     # Replace worst fitness scores with best fitness scores from the existing population
-    for i in range(10):
+    for i in range(REPLACEMENT_SIZE):
         population[worst_indices[i]] = population[best_population_indices[0]]
-       # print(worst_indices[i])
-
-    # Replace remaining worst fitness scores with best fitness scores from the offspring
-    for i in range(10):
-        population[worst_indices[i + 20]] = offspring[best_offspring_indices[i]]
-        #print(worst_indices[i+20])
-
-    # for i in range(10):
-    #     population[worst_indices[i+10]] = population[best_population_indices[i]]
-    #     #print(worst_indices[i+10])
+        population[worst_indices[i + REPLACEMENT_SIZE]] = population[best_population_indices[i]]
+        population[worst_indices[i + 2 * REPLACEMENT_SIZE]] = offspring[best_offspring_indices[i]]
 
     return population
 
 def genetic_algorithm(ciphertext):
-    # Initialize population
+    # Initialize random population
     population = [generate_random_key() for _ in range(POPULATION_SIZE)]
 
     for generation in range(MAX_GENERATIONS):
@@ -247,16 +201,13 @@ def genetic_algorithm(ciphertext):
 
         # Replace population with offspring
         population = replace_population(population, offspring, fitness_scores)
+        print("population size: ", len(population))
 
         # Print best decryption key and fitness score for the current generation
         best_index = fitness_scores.index(max(fitness_scores))
         best_key = population[best_index]
         best_fitness = fitness_scores[best_index]
         print(f"Generation: {generation+1} | Best Fitness: {best_fitness} | Best Decryption Key: {best_key}")
-
-        # Termination condition
-        # if best_fitness == len(word_list):
-        #     break
 
     return best_key
 
