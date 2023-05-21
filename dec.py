@@ -6,6 +6,11 @@ MAX_GENERATIONS = 90
 MUTATION_RATE = 0.12
 REPLACEMENT_RATE = 0.15
 REPLACEMENT_SIZE = int(POPULATION_SIZE * REPLACEMENT_RATE)
+EPSILON = 0.0001
+NO_IMPROVEMENT_THRESHOLD = 12
+
+DARWIN = False
+LAMARCKN = False
 
 fitness_calls_coutner = 0
 
@@ -144,18 +149,19 @@ def mutate(decryption_key):
     return mutated_key
 
 
-def select_parents(population, fitness_scores):
-    # Assign ranks to individuals based on their fitness scores
-    ranks = list(range(len(fitness_scores)))
-    ranks.sort(key=lambda i: fitness_scores[i])
+import random
 
-    # Calculate selection probabilities based on ranks
-    selection_probs = [(2 * (len(ranks) - rank)) / (len(ranks) * (len(ranks) + 1)) for rank in ranks]
-
-    # Select parents using rank-based probabilities
-    parents = random.choices(population, weights=selection_probs, k=2)
-
+def select_parents(population, fitness_scores, tournament_size=5):
+    parents = []
+    
+    for _ in range(2):  # Select 2 parents
+        tournament_candidates = random.sample(range(len(population)), tournament_size)
+        tournament_scores = [fitness_scores[i] for i in tournament_candidates]
+        winner_index = tournament_candidates[tournament_scores.index(max(tournament_scores))]
+        parents.append(population[winner_index])
+    
     return parents
+
 
 
 def replace_population(population, offspring, fitness_scores):
@@ -192,7 +198,8 @@ def replace_population(population, offspring, fitness_scores):
 def genetic_algorithm(ciphertext):
     # Initialize random population
     population = [generate_random_key() for _ in range(POPULATION_SIZE)]
-
+    no_improvement_counter = 0
+    best_fitness = 0
     for generation in range(MAX_GENERATIONS):
         fitness_scores = []
         offspring = []
@@ -211,12 +218,20 @@ def genetic_algorithm(ciphertext):
 
         # Replace population with offspring
         population = replace_population(population, offspring, fitness_scores)
-        print("population size: ", len(population))
 
         # Print best decryption key and fitness score for the current generation
+        temp_best_fitness = best_fitness
         best_index = fitness_scores.index(max(fitness_scores))
         best_key = population[best_index]
         best_fitness = fitness_scores[best_index]
+
+        if best_fitness - temp_best_fitness < EPSILON:
+            no_improvement_counter += 1
+        else:
+            no_improvement_counter = 0
+
+        if no_improvement_counter == NO_IMPROVEMENT_THRESHOLD:
+            break
         print(f"Generation: {generation+1} | Best Fitness: {best_fitness} | Best Decryption Key: {best_key}")
 
     return best_key
