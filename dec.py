@@ -10,7 +10,8 @@ EPSILON = 0.0001
 NO_IMPROVEMENT_THRESHOLD = 12
 
 DARWIN = False
-LAMARCKN = False
+LAMARCK = False
+LOCAL_SWAPS = 5
 
 fitness_calls_coutner = 0
 
@@ -195,6 +196,29 @@ def replace_population(population, offspring, fitness_scores):
 
     return population
 
+def local_optimization(individual, n=LOCAL_SWAPS):
+    keys = list(individual.keys())
+    for _ in range(n):
+        index1, index2 = random.sample(range(len(keys)), 2)
+        letter1, letter2 = keys[index1], keys[index2]
+        individual[letter1], individual[letter2] = individual[letter2], individual[letter1]
+    return individual
+
+def darwin_mutation(population, fitness_scores, ciphertext):
+    for i in range(len(population)):
+        mutated_individual = mutate(population[i])
+        mutated_fitness = calculate_fitness(mutated_individual, ciphertext)
+        if mutated_fitness > fitness_scores[i]:
+            fitness_scores[i] = mutated_fitness
+
+def lamarck_mutation(population, fitness_scores, ciphertext):
+    for i in range(len(population)):
+        mutated_individual = mutate(population[i])
+        mutated_fitness = calculate_fitness(mutated_individual, ciphertext)
+        if mutated_fitness > fitness_scores[i]:
+            fitness_scores[i] = mutated_fitness
+            population[i] = mutated_individual
+
 def genetic_algorithm(ciphertext):
     # Initialize random population
     population = [generate_random_key() for _ in range(POPULATION_SIZE)]
@@ -216,8 +240,14 @@ def genetic_algorithm(ciphertext):
             mutated_child = mutate(child)
             offspring.append(mutated_child)
 
+            
         # Replace population with offspring
         population = replace_population(population, offspring, fitness_scores)
+
+        if DARWIN:
+            darwin_mutation(population, fitness_scores, ciphertext)
+        if LAMARCK:
+            lamarck_mutation(population, fitness_scores, ciphertext)
 
         # Print best decryption key and fitness score for the current generation
         temp_best_fitness = best_fitness
