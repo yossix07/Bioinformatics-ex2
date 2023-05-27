@@ -1,6 +1,5 @@
 import random
 import sys
-from matplotlib import pyplot as plt
 
 # Global variables
 POPULATION_SIZE = 100
@@ -13,8 +12,6 @@ NO_IMPROVEMENT_THRESHOLD = 12
 OPTIMAL = False
 LOCAL_SWAPS = 8
 OPTIMAL_THRESHOLD = 0.98
-DISPLAY_AVG_GRAPH = False
-DISPLAY_BEST_GRAPH = False
 
 fitness_calls_coutner = 0
 
@@ -236,14 +233,6 @@ def handle_local_max(ciphertext,best_decryption_key, best_decryption_key_fitness
             return best_decryption_key
     return best_decryption_key
 
-# generate graph with given text and scores
-def generate_graph(main_text, y_text, num_generation, generation_scores ):
-    plt.plot(num_generation, generation_scores)
-    plt.title(main_text)
-    plt.ylabel(y_text)
-    plt.xlabel('Number of generations')
-    plt.show()
-
 # genetic algorithm for decrypting the ciphertext
 def genetic_algorithm(ciphertext, mode=''):
     global generations_average_fitness_scores
@@ -330,14 +319,6 @@ best_decryption_key, counter, fitness = genetic_algorithm(ciphertext, mode)
 # handle local max
 if counter == NO_IMPROVEMENT_THRESHOLD and not OPTIMAL:
     best_decryption_key = handle_local_max(ciphertext, best_decryption_key, fitness)
-
-# generate graphs
-if DISPLAY_AVG_GRAPH:
-    generate_graph('Average fitness score','Average fitness score',num_of_generations,
-                   generations_average_fitness_scores)
-if DISPLAY_BEST_GRAPH:
-    generate_graph('Best fitness score', 'Best fitness score', num_of_generations,
-                   generations_best_fitness_scores)
 
 decrypted_text = decrypt_text(ciphertext, best_decryption_key)
 

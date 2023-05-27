@@ -2,8 +2,6 @@
 
 ## Getting Started
 - Clone this repositoy.
-- install dependency by running the following in your terminal -
-<br/> $ pip install matplotlib
 
 - You are all set! you can run the simulation with the following command in your terminal - 
 <br/> $ python dec.py {encFile} {mode}
