@@ -4,7 +4,6 @@ import sys
 # Global variables
 POPULATION_SIZE = 100
 MAX_GENERATIONS = 90
-MUTATION_RATE = 1
 REPLACEMENT_RATE = 0.15
 REPLACEMENT_SIZE = int(POPULATION_SIZE * REPLACEMENT_RATE)
 EPSILON = 0.0001
@@ -235,18 +234,11 @@ def handle_local_max(ciphertext,best_decryption_key, best_decryption_key_fitness
 
 # genetic algorithm for decrypting the ciphertext
 def genetic_algorithm(ciphertext, mode=''):
-    global generations_average_fitness_scores
-    global generations_best_fitness_scores
-    global num_of_generations
-    num_of_generations = 0
-    generations_best_fitness_scores = []
-    generations_average_fitness_scores = []
 
     # Initialize random starting population
     population = [generate_random_key() for _ in range(POPULATION_SIZE)]
     no_improvement_counter = 0
     best_fitness = 0
-    gen_num = 0
 
     for generation in range(MAX_GENERATIONS):
         fitness_scores = []
@@ -257,16 +249,13 @@ def genetic_algorithm(ciphertext, mode=''):
             fitness = calculate_fitness(decryption_key, ciphertext)
             fitness_scores.append(fitness)
             if OPTIMAL:
-                gen_num = generation
-                num_of_generations = [i for i in range(gen_num)]
                 return decryption_key, 0, fitness
 
         # Select parents and create offspring
         for _ in range(POPULATION_SIZE//2):
             parent1, parent2 = select_parents(population, fitness_scores)
             child = crossover(parent1, parent2)
-            if random.random() < MUTATION_RATE:
-                child = mutate(child)
+            child = mutate(child)
             offspring.append(child)
 
             
@@ -282,9 +271,6 @@ def genetic_algorithm(ciphertext, mode=''):
         best_index = fitness_scores.index(max(fitness_scores))
         best_key = population[best_index]
         best_fitness = fitness_scores[best_index]
-        average_gen_fitness = sum(fitness_scores) / len(fitness_scores)
-        generations_average_fitness_scores.append(average_gen_fitness)
-        generations_best_fitness_scores.append(best_fitness)
 
         if best_fitness - temp_best_fitness < EPSILON:
             no_improvement_counter += 1
@@ -296,23 +282,16 @@ def genetic_algorithm(ciphertext, mode=''):
 
         print(f"Generation: {generation+1} | Best Fitness: {best_fitness} | Best Decryption Key: {best_key}")
 
-        gen_num = generation + 1
-    num_of_generations = [i for i in range(gen_num)]
-
     return best_key, no_improvement_counter, best_fitness
 
 args = sys.argv[1:]
-encFile = args[0]
-mode = ''
-if len(args) > 1:
-    mode = args[1].lower()
+if len(args) > 0:
+    encFile = args[0]
+    mode = ''
+    if len(args) > 1:
+        mode = args[1].lower()
 
 ciphertext = read_text_from_file(encFile)
-
-# initialize lists to generate graphs
-num_of_generations = []
-generations_best_fitness_scores = []
-generations_average_fitness_scores = []
 
 best_decryption_key, counter, fitness = genetic_algorithm(ciphertext, mode)
 
