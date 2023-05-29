@@ -3,7 +3,7 @@
 ## Getting Started
 - Clone this repositoy.
 
-- You are all set! you have to options - 
+- You are all set! you have 2 options in order to run - 
 
 #### Run Executable
 - From the cloned folder, run the following command - 
